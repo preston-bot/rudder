@@ -52,8 +52,10 @@ rudder/
 ### 1. Install dependencies
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 ```
+
+> **Note for iOS development:** You need Xcode installed (Mac only). Install it from the Mac App Store.
 
 ### 2. Supabase project
 

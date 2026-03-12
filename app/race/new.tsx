@@ -15,7 +15,9 @@ import {
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useRaces } from '../../hooks/useRace';
+import { useProfile } from '../../hooks/useProfile';
 import { generateTrainingPlan } from '../../lib/claude';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/Button';
 import { Text } from '../../components/ui/Text';
 import { Card } from '../../components/ui/Card';
@@ -61,6 +63,7 @@ type Step = 'race' | 'goal' | 'context';
 export default function NewRaceScreen() {
   const { user } = useAuth();
   const { createRace } = useRaces(user?.id);
+  const { updateProfile } = useProfile(user?.id);
 
   const [step, setStep] = useState<Step>('race');
   const [loading, setLoading] = useState(false);
@@ -122,14 +125,36 @@ export default function NewRaceScreen() {
         priority,
       });
 
-      // Trigger AI plan generation in background — show optimistic UI
-      router.replace('/(app)/');
-      generateTrainingPlan({
-        profile: {} as any, // fetched server-side in edge function
+      // Persist training context to profile so the edge function can read it
+      await updateProfile({
+        available_days_per_week: daysPerWeek,
+        pool_lengths: poolLengths,
+      });
+
+      // Generate plan — edge function fetches the full profile server-side
+      const generatedPlan = await generateTrainingPlan({
+        profile: {} as any,
         race,
         focus_areas: focusAreas,
         has_benchmark: false,
-      }).catch(console.error);
+      });
+
+      // Save the generated plan to Supabase
+      const { error: planError } = await supabase.from('training_plans').insert({
+        race_id: race.race_id,
+        user_id: user.id,
+        current_phase: generatedPlan.current_phase,
+        phases: generatedPlan.phases,
+        focus_areas: generatedPlan.focus_areas,
+        compliance_score: null,
+        trend_flag: null,
+        last_adjustment_explanation: null,
+        last_adjustment_reason: null,
+      });
+
+      if (planError) throw planError;
+
+      router.replace('/(app)/');
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {

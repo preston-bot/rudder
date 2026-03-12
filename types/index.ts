@@ -197,7 +197,7 @@ export interface SwimSession {
 
 // ─── Check-Ins ───────────────────────────────────────────────────────────────
 
-export type CheckInWeek = 8 | 4;
+export type CheckInWeek = 8 | 4 | 2;
 export type CheckInStatus = 'ahead' | 'on_target' | 'behind';
 
 export interface CheckIn {

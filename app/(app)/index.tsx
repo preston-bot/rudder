@@ -3,7 +3,7 @@
  * Race name + date, target window, countdown, motivational truth, CTA to arc.
  */
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -17,30 +17,36 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
 import { useRaces } from '../../hooks/useRace';
 import { useTrainingPlan } from '../../hooks/useWorkouts';
+import { getRevealCopy } from '../../lib/claude';
 import { Button } from '../../components/ui/Button';
 import { Text } from '../../components/ui/Text';
 import { Card } from '../../components/ui/Card';
 import { Colors, Spacing } from '../../constants/theme';
 import { daysToRace, formatDistance } from '../../lib/workout-engine';
 
-const MOTIVATIONAL_LINES = [
-  'Train steady. Arrive sharp. Leave nothing behind.',
-  'Every meter in the pool is a meter banked for race day.',
-  'Consistency beats heroics. Every time.',
-  'You\'re not preparing to survive. You\'re preparing to race.',
-];
+const FALLBACK_LINE = 'Train steady. Arrive sharp. Leave nothing behind.';
 
 export default function RevealScreen() {
   const { user } = useAuth();
   const { primaryRace, loading: racesLoading } = useRaces(user?.id);
   const { plan, loading: planLoading } = useTrainingPlan(primaryRace?.race_id);
+  const [motivationalLine, setMotivationalLine] = useState(FALLBACK_LINE);
 
   const days = primaryRace ? daysToRace(primaryRace.date) : null;
   const weeks = days !== null ? Math.floor(days / 7) : null;
 
-  const motivationalLine = useMemo(() => {
-    return MOTIVATIONAL_LINES[Math.floor(Math.random() * MOTIVATIONAL_LINES.length)];
-  }, []);
+  // Fetch Claude-generated copy once race + plan are loaded
+  useEffect(() => {
+    if (!primaryRace || days === null) return;
+    getRevealCopy({
+      race: primaryRace,
+      days_to_race: days,
+      current_phase: plan?.current_phase ?? 'base',
+      trend_flag: plan?.trend_flag ?? null,
+    })
+      .then((r) => setMotivationalLine(r.motivational_line))
+      .catch(() => {}); // silently keep fallback on error
+  }, [primaryRace?.race_id, plan?.current_phase]);
 
   // ─── No race state ───────────────────────────────────────────────────────
 
@@ -143,7 +149,7 @@ export default function RevealScreen() {
         />
 
         {/* Phase reminder */}
-        {weeks !== null && (weeks === 8 || weeks === 4) && (
+        {weeks !== null && (weeks === 8 || weeks === 4 || weeks === 2) && (
           <Card style={styles.checkInBanner} bordered>
             <Text size="sm" weight="semibold" style={{ color: Colors.status.behind }}>
               {weeks}-week check-in available

@@ -16,9 +16,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.rudderswim.app",
       "usesAppleSignIn": true,
-      "infoPlist": {
-        "NSHealthShareUsageDescription": "Rudder reads your swim workout data to build accurate training plans.",
-        "NSHealthUpdateUsageDescription": "Rudder may write planned workouts to Apple Health."
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
       }
     },
     "android": {
@@ -35,7 +35,23 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-apple-authentication",
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Rudder reads your swim workout data to build accurate training plans.",
+          "healthUpdatePermission": "Rudder may write planned workouts to Apple Health."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#0A0A0F",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

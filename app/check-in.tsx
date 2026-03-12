@@ -31,14 +31,26 @@ export default function CheckInScreen() {
         created_at: new Date().toISOString(),
       });
 
-      // Trigger plan adjustment via Claude
-      await adjustTrainingPlan({
+      // Trigger plan adjustment via Claude and persist the result
+      const result = await adjustTrainingPlan({
         plan,
         profile: {} as any,
         race,
         trigger: { type: 'check_in', status, weeks_out: weeksOut },
       });
 
+      const { error: planError } = await supabase
+        .from('training_plans')
+        .update({
+          phases: result.updated_plan.phases,
+          current_phase: result.updated_plan.current_phase,
+          last_adjustment_explanation: result.user_visible_explanation,
+          last_adjustment_reason: 'check_in',
+          last_adjusted_at: new Date().toISOString(),
+        })
+        .eq('plan_id', plan.plan_id);
+
+      if (planError) throw planError;
       await refresh();
       router.back();
     } catch (e: any) {

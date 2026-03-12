@@ -96,6 +96,11 @@ export function CheckInModal({ visible, weeksOut, onSubmit, onDismiss }: Props) 
                 At 4 weeks out, confidence matters more than fitness. There's no punishment plan here.
               </Text>
             )}
+            {weeksOut === 2 && (
+              <Text size="sm" variant="secondary" style={{ marginTop: Spacing['3'], lineHeight: 20 }}>
+                Two weeks out. The fitness is built. This check-in is about protecting it — and arriving intact.
+              </Text>
+            )}
           </View>
 
           {/* Options */}

@@ -3,37 +3,30 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-// SSR + native safe storage — resolved lazily to avoid TurboModule init errors
+// Safe storage that works in SSR, web, and native without crashing.
+// During SSR window is undefined — return null silently so Supabase
+// simply sees "no session" instead of throwing.
 const storage = {
   getItem: async (key: string): Promise<string | null> => {
-    if (typeof window !== 'undefined') {
-      return window.localStorage.getItem(key);
-    }
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      return AsyncStorage.getItem(key);
-    } catch {
-      return null;
-    }
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        return localStorage.getItem(key);
+      }
+    } catch {}
+    return null;
   },
-  setItem: async (key: string, value: string): Promise<void> => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(key, value);
-      return;
-    }
+  setItem: async (_key: string, _value: string): Promise<void> => {
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.setItem(key, value);
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.setItem(_key, _value);
+      }
     } catch {}
   },
-  removeItem: async (key: string): Promise<void> => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(key);
-      return;
-    }
+  removeItem: async (_key: string): Promise<void> => {
     try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      await AsyncStorage.removeItem(key);
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.removeItem(_key);
+      }
     } catch {}
   },
 };

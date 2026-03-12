@@ -7,10 +7,21 @@
  */
 
 import Anthropic from 'npm:@anthropic-ai/sdk';
+import { createClient } from 'npm:@supabase/supabase-js';
 
 const anthropic = new Anthropic({
   apiKey: Deno.env.get('ANTHROPIC_API_KEY')!,
 });
+
+async function fetchProfile(userJwt: string) {
+  const client = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: `Bearer ${userJwt}` } } },
+  );
+  const { data } = await client.from('user_profiles').select('*').single();
+  return data;
+}
 
 const MODEL = 'claude-opus-4-6';
 
@@ -30,15 +41,30 @@ Output valid JSON only. No markdown, no prose outside the JSON.`;
 
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
-async function generatePlan(payload: Record<string, unknown>) {
+async function generatePlan(payload: Record<string, unknown>, userJwt: string) {
   const { race, focus_areas, has_benchmark } = payload;
+  const profile = await fetchProfile(userJwt);
 
   const prompt = `
-Generate a complete training plan for this race:
+Generate a complete training plan for this swimmer and race.
+
+Swimmer profile:
+${JSON.stringify(profile, null, 2)}
+
+Race:
 ${JSON.stringify(race, null, 2)}
 
 Focus areas: ${JSON.stringify(focus_areas)}
 Has existing benchmark: ${has_benchmark}
+
+Critical constraints from profile — you MUST respect these:
+- Schedule exactly ${profile?.available_days_per_week ?? 3} sessions per week
+- Sessions should be ${profile?.preferred_session_duration_min ?? 30}–${profile?.preferred_session_duration_max ?? 90} minutes
+- Experience level: ${profile?.experience_level ?? 'novice'} (novice=shorter distances and more recovery; competitive=full load)
+- Miss tolerance: ${profile?.miss_tolerance ?? 'adaptive'} (low_guilt=build in buffer sessions; strict=no buffer)
+- Dominant stroke: ${profile?.dominant_stroke ?? 'freestyle'}
+- Injury flags: ${JSON.stringify(profile?.injury_flags ?? [])} — avoid loading flagged areas
+- Primary identity: ${profile?.primary_identity ?? 'swimmer'} (triathlete=include brick-compatible sessions)
 
 Return a TrainingPlan JSON object with:
 - current_phase (base | build | specific | taper)
@@ -71,14 +97,17 @@ Make phases realistic given the days to race. Use today's date as plan start.
   return JSON.parse(text);
 }
 
-async function adjustPlan(payload: Record<string, unknown>) {
+async function adjustPlan(payload: Record<string, unknown>, userJwt: string) {
   const { plan, race, trigger } = payload;
+  const profile = await fetchProfile(userJwt);
 
   const prompt = `
 Adjust this existing training plan based on the following trigger:
 ${JSON.stringify(trigger, null, 2)}
 
 Race: ${JSON.stringify(race, null, 2)}
+Swimmer miss tolerance: ${profile?.miss_tolerance ?? 'adaptive'} — this shapes how aggressively to compensate.
+Injury flags: ${JSON.stringify(profile?.injury_flags ?? [])} — do not increase load on flagged areas.
 Current plan (abbreviated — phases structure):
 ${JSON.stringify({ current_phase: (plan as any).current_phase, phases_summary: (plan as any).phases?.map((p: any) => ({ phase: p.phase, start: p.start_date, end: p.end_date, session_count: p.weeks?.reduce((a: number, w: any) => a + (w.sessions?.length ?? 0), 0) })) }, null, 2)}
 
@@ -88,6 +117,10 @@ Rules:
 - Protect priority sessions when behind.
 - Write a user_visible_explanation in plain English (1-2 sentences, no jargon).
 - At 4 weeks out with "behind" status: protect confidence, protect health, arrive intact.
+- At 2 weeks out: NO structural changes regardless of status. Taper is locked.
+  - "ahead": confirm taper, say "Trust the work. Race week is about arrival."
+  - "on_target": affirm steadiness, enforce rest.
+  - "behind": one confidence swim only — easy, feel-good. No fitness chasing. Zero guilt.
 
 Return JSON:
 {
@@ -184,11 +217,14 @@ Return JSON: { "motivational_line": "..." }
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 
-const HANDLERS: Record<string, (p: Record<string, unknown>) => Promise<unknown>> = {
+// Handlers that need the user JWT to fetch the profile server-side
+const JWT_HANDLERS = new Set(['generate_plan', 'adjust_plan']);
+
+const HANDLERS: Record<string, (p: Record<string, unknown>, jwt: string) => Promise<unknown>> = {
   generate_plan: generatePlan,
   adjust_plan: adjustPlan,
-  interpret_session: interpretSession,
-  reveal_copy: revealCopy,
+  interpret_session: (p) => interpretSession(p),
+  reveal_copy: (p) => revealCopy(p),
 };
 
 Deno.serve(async (req: Request) => {
@@ -202,6 +238,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const userJwt = req.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
     const body = await req.json() as Record<string, unknown>;
     const { action, ...payload } = body;
 
@@ -212,7 +249,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const result = await HANDLERS[action](payload);
+    const result = await HANDLERS[action](payload, userJwt);
     return new Response(JSON.stringify(result), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });

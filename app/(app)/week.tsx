@@ -3,7 +3,7 @@
  * 3-4 swims, clearly differentiated, labeled by WHY not what.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -26,8 +26,15 @@ import { daysToRace } from '../../lib/workout-engine';
 export default function WeekScreen() {
   const { user } = useAuth();
   const { primaryRace } = useRaces(user?.id);
-  const { plan, loading, refresh } = useTrainingPlan(primaryRace?.race_id);
+  const { plan, loading, refresh, detectAndAdaptMissedSessions } = useTrainingPlan(primaryRace?.race_id);
   const sessions = useThisWeekSessions(plan);
+
+  // On mount: silently detect and adapt for any missed sessions
+  useEffect(() => {
+    if (plan && primaryRace && !loading) {
+      detectAndAdaptMissedSessions(primaryRace).catch(console.error);
+    }
+  }, [plan?.plan_id]);
 
   const days = primaryRace ? daysToRace(primaryRace.date) : null;
   const completedCount = sessions.filter((s) => s.completed).length;

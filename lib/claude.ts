@@ -55,7 +55,7 @@ export interface AdjustPlanInput {
   race: Race;
   trigger:
     | { type: 'missed_session'; session_ids: string[] }
-    | { type: 'check_in'; status: CheckInStatus; weeks_out: 4 | 8 }
+    | { type: 'check_in'; status: CheckInStatus; weeks_out: 2 | 4 | 8 }
     | { type: 'benchmark_updated'; new_pace: number }
     | { type: 'recovery_signal'; hrv_trend: 'improving' | 'declining'; sleep_score: number };
 }

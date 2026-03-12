@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Session } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { supabase } from '../lib/supabase';
 
 export function useAuth() {
@@ -18,6 +21,33 @@ export function useAuth() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // ─── Apple Sign-In ─────────────────────────────────────────────────────────
+  // iOS only. Uses nonce to prevent replay attacks.
+
+  async function signInWithApple() {
+    const rawNonce = Math.random().toString(36).substring(2);
+    const hashedNonce = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      rawNonce,
+    );
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken!,
+      nonce: rawNonce,
+    });
+
+    if (error) throw error;
+  }
 
   // ─── Google Sign-In ────────────────────────────────────────────────────────
   // Uses Supabase OAuth redirect flow — works on both platforms.
@@ -43,6 +73,7 @@ export function useAuth() {
     session,
     user: session?.user ?? null,
     loading,
+    isAppleAvailable: Platform.OS === 'ios',
     signInWithApple,
     signInWithGoogle,
     signOut,

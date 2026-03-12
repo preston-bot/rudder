@@ -5,8 +5,8 @@ import {
   Platform,
   Alert,
   SafeAreaView,
-  Image,
 } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
@@ -70,6 +70,15 @@ export default function SignInScreen() {
 
         {/* Auth buttons */}
         <View style={styles.authButtons}>
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              cornerRadius={12}
+              style={styles.appleButton}
+              onPress={handleApple}
+            />
+          )}
           <Button
             label={loading === 'google' ? '' : 'Continue with Google'}
             variant="secondary"

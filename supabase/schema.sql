@@ -133,7 +133,7 @@ create table public.check_ins (
   check_in_id              uuid primary key default uuid_generate_v4(),
   user_id                  uuid not null references auth.users(id) on delete cascade,
   race_id                  uuid not null references public.races(race_id) on delete cascade,
-  weeks_out                int not null check (weeks_out in (4, 8)),
+  weeks_out                int not null check (weeks_out in (2, 4, 8)),
   status                   text not null check (status in ('ahead', 'on_target', 'behind')),
   confidence_level         int check (confidence_level >= 1 and confidence_level <= 5),
   notes                    text,

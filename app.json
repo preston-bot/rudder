@@ -19,6 +19,9 @@
       "entitlements": {
         "com.apple.developer.healthkit": true,
         "com.apple.developer.healthkit.access": []
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -61,8 +64,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "101fd754-5401-4b7c-954d-b2a82b7bf444"
+        "projectId": "29836eb2-887d-49ca-a3fc-e750370a5c94"
       }
-    }
+    },
+    "owner": "rudder_matt"
   }
 }

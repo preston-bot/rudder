@@ -18,17 +18,26 @@ import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import type { PoolLength } from '../types';
 
-// react-native-health is iOS only — guard all access
-let AppleHealthKit: any = null;
-let HealthUnit: any = null;
-if (Platform.OS === 'ios') {
-  try {
-    const pkg = require('react-native-health');
-    AppleHealthKit = pkg.default;
-    HealthUnit = pkg.HealthUnit;
-  } catch {
-    // not available in Expo Go — silently ignore
+// react-native-health is iOS only — lazy-load to avoid crashing on iPad
+// where HealthKit native module may throw during TurboModule init.
+let _healthKit: any = null;
+let _healthUnit: any = null;
+let _healthKitLoaded = false;
+
+function getHealthKit() {
+  if (!_healthKitLoaded) {
+    _healthKitLoaded = true;
+    if (Platform.OS === 'ios') {
+      try {
+        const pkg = require('react-native-health');
+        _healthKit = pkg.default;
+        _healthUnit = pkg.HealthUnit;
+      } catch {
+        // not available in Expo Go — silently ignore
+      }
+    }
   }
+  return { AppleHealthKit: _healthKit, HealthUnit: _healthUnit };
 }
 
 export interface RawHealthWorkout {
@@ -62,21 +71,23 @@ function guessPoolLength(metadata: Record<string, unknown>): PoolLength {
   return '25m'; // safest default
 }
 
-const PERMISSIONS = AppleHealthKit
-  ? {
-      permissions: {
-        read: [
-          AppleHealthKit.Constants.Permissions.Workout,
-          AppleHealthKit.Constants.Permissions.HeartRate,
-          AppleHealthKit.Constants.Permissions.DistanceSwimming,
-          AppleHealthKit.Constants.Permissions.SwimmingStrokeCount,
-        ],
-        write: [
-          AppleHealthKit.Constants.Permissions.Workout,
-        ],
-      },
-    }
-  : null;
+function getPermissions() {
+  const { AppleHealthKit } = getHealthKit();
+  if (!AppleHealthKit) return null;
+  return {
+    permissions: {
+      read: [
+        AppleHealthKit.Constants.Permissions.Workout,
+        AppleHealthKit.Constants.Permissions.HeartRate,
+        AppleHealthKit.Constants.Permissions.DistanceSwimming,
+        AppleHealthKit.Constants.Permissions.SwimmingStrokeCount,
+      ],
+      write: [
+        AppleHealthKit.Constants.Permissions.Workout,
+      ],
+    },
+  };
+}
 
 export function useHealthKit(userId?: string) {
   const [state, setState] = useState<HealthKitState>({
@@ -89,14 +100,16 @@ export function useHealthKit(userId?: string) {
   });
 
   const requestPermissions = useCallback(() => {
-    if (!AppleHealthKit || !PERMISSIONS) {
+    const { AppleHealthKit } = getHealthKit();
+    const perms = getPermissions();
+    if (!AppleHealthKit || !perms) {
       setState((s) => ({ ...s, error: 'HealthKit not available (needs native build)' }));
       return;
     }
 
     setState((s) => ({ ...s, loading: true, error: null }));
 
-    AppleHealthKit.initHealthKit(PERMISSIONS, (err: string) => {
+    AppleHealthKit.initHealthKit(perms, (err: string) => {
       if (err) {
         setState((s) => ({ ...s, loading: false, authorized: false, error: err }));
         return;
@@ -107,6 +120,7 @@ export function useHealthKit(userId?: string) {
   }, []);
 
   const fetchSwimWorkouts = useCallback(() => {
+    const { AppleHealthKit } = getHealthKit();
     if (!AppleHealthKit) return;
 
     const options = {

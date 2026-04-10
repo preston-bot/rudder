@@ -20,14 +20,23 @@ import { useState, useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
 import type { PlannedSession } from '../types';
 
-// react-native-watch-connectivity is iOS only
-let WatchConnectivity: any = null;
-if (Platform.OS === 'ios') {
-  try {
-    WatchConnectivity = require('react-native-watch-connectivity');
-  } catch {
-    // Expo Go or Android — silently ignore
+// react-native-watch-connectivity is iOS only — lazy-load to avoid
+// crashing on iPad where the native module may throw during TurboModule init.
+let _watchConnectivity: any = null;
+let _watchLoaded = false;
+
+function getWatchConnectivity() {
+  if (!_watchLoaded) {
+    _watchLoaded = true;
+    if (Platform.OS === 'ios') {
+      try {
+        _watchConnectivity = require('react-native-watch-connectivity');
+      } catch {
+        // Expo Go or Android — silently ignore
+      }
+    }
   }
+  return _watchConnectivity;
 }
 
 export interface WatchWorkoutPayload {
@@ -89,7 +98,8 @@ export function useWatchKit() {
 
   // Subscribe to reachability changes
   useEffect(() => {
-    if (!WatchConnectivity) return;
+    const WC = getWatchConnectivity();
+    if (!WC) return;
 
     let unsubPaired: (() => void) | undefined;
     let unsubReachable: (() => void) | undefined;
@@ -97,9 +107,9 @@ export function useWatchKit() {
     try {
       // Check initial state
       Promise.all([
-        WatchConnectivity.getIsPaired(),
-        WatchConnectivity.getIsWatchAppInstalled(),
-        WatchConnectivity.getReachability(),
+        WC.getIsPaired(),
+        WC.getIsWatchAppInstalled(),
+        WC.getReachability(),
       ]).then(([paired, watchAppInstalled, reachable]: [boolean, boolean, boolean]) => {
         setState((s) => ({ ...s, supported: true, paired, watchAppInstalled, reachable }));
       }).catch(() => {
@@ -107,7 +117,7 @@ export function useWatchKit() {
       });
 
       // Listen for reachability changes
-      unsubReachable = WatchConnectivity.subscribeToWatchReachability(
+      unsubReachable = WC.subscribeToWatchReachability(
         (reachable: boolean) => setState((s) => ({ ...s, reachable })),
       );
     } catch {
@@ -128,7 +138,8 @@ export function useWatchKit() {
    * - Otherwise: use updateApplicationContext() so the Watch picks it up on next launch
    */
   const sendWorkout = useCallback(async (session: PlannedSession) => {
-    if (!WatchConnectivity) {
+    const WC = getWatchConnectivity();
+    if (!WC) {
       setState((s) => ({ ...s, error: 'WatchConnectivity not available (needs native build)' }));
       return;
     }
@@ -141,11 +152,11 @@ export function useWatchKit() {
 
       if (state.reachable) {
         // Watch app is open — send immediately
-        await WatchConnectivity.sendMessage(message);
+        await WC.sendMessage(message);
       } else {
         // Watch app not open — queue for next launch via Application Context
         // Application context is a dictionary that the Watch reads when it opens
-        await WatchConnectivity.updateApplicationContext(message);
+        await WC.updateApplicationContext(message);
       }
 
       setState((s) => ({

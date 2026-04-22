@@ -16,10 +16,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.rudderswim.app",
       "usesAppleSignIn": true,
-      "entitlements": {
-        "com.apple.developer.healthkit": true,
-        "com.apple.developer.healthkit.access": []
-      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -40,13 +36,6 @@
       "expo-router",
       "expo-secure-store",
       "expo-apple-authentication",
-      [
-        "react-native-health",
-        {
-          "healthSharePermission": "Rudder reads your swim workout data to build accurate training plans.",
-          "healthUpdatePermission": "Rudder may write planned workouts to Apple Health."
-        }
-      ],
       [
         "expo-notifications",
         {

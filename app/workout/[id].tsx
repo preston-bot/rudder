@@ -23,7 +23,6 @@ import { formatDistance } from '../../lib/workout-engine';
 import { useAuth } from '../../hooks/useAuth';
 import { useRaces } from '../../hooks/useRace';
 import { useTrainingPlan, getPlannedSession } from '../../hooks/useWorkouts';
-import { useWatchKit } from '../../hooks/useWatchKit';
 import type { PlannedInterval } from '../../types';
 
 const EFFORT_LABELS = {
@@ -44,7 +43,6 @@ export default function WorkoutDetailScreen() {
   const { user } = useAuth();
   const { primaryRace } = useRaces(user?.id);
   const { plan, loading, markSessionDone, skipSession } = useTrainingPlan(primaryRace?.race_id);
-  const { paired, watchAppInstalled, reachable, sending, lastSentAt, sendWorkout } = useWatchKit();
 
   const [rpe, setRpe] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -168,33 +166,6 @@ export default function WorkoutDetailScreen() {
               <IntervalRow key={i} interval={interval} />
             ))}
           </View>
-        )}
-
-        {/* Send to Watch */}
-        {paired && watchAppInstalled && !session.completed && !session.skipped && (
-          <Card style={styles.watchCard}>
-            <View style={styles.watchRow}>
-              <Ionicons name="watch-outline" size={20} color={reachable ? Colors.status.ahead : Colors.text.secondary} />
-              <View style={{ flex: 1 }}>
-                <Text size="sm" weight="semibold">Send to Watch</Text>
-                <Text size="xs" variant="tertiary">
-                  {reachable ? 'Watch app is active' : 'Watch app not open — queued on save'}
-                </Text>
-              </View>
-              <Button
-                label={lastSentAt ? 'Resend' : 'Send'}
-                variant="secondary"
-                size="sm"
-                loading={sending}
-                onPress={() => sendWorkout(session!)}
-              />
-            </View>
-            {lastSentAt && (
-              <Text size="xs" variant="secondary" style={{ color: Colors.status.ahead }}>
-                Sent at {new Date(lastSentAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            )}
-          </Card>
         )}
 
         {/* RPE + actions — only if not already resolved */}

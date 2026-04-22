@@ -87,15 +87,6 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="health/workouts"
-          options={{
-            headerShown: true,
-            headerTitle: 'Apple Health',
-            headerStyle: { backgroundColor: Colors.bg.primary },
-            headerTintColor: Colors.text.primary,
-          }}
-        />
-        <Stack.Screen
           name="profile/benchmark"
           options={{
             headerShown: true,

@@ -179,13 +179,6 @@ export default function ProfileScreen() {
           </Text>
           <Card>
             <SettingsRow
-              icon="watch-outline"
-              label="Apple Health"
-              value="Connect"
-              onPress={() => router.push('/health/workouts')}
-            />
-            <View style={styles.divider} />
-            <SettingsRow
               icon="fitness-outline"
               label="Garmin Connect"
               value="Not connected"

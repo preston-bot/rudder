@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Pressable,
 } from 'react-native';
+import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useRaces } from '../../hooks/useRace';
 import { useTrainingPlan } from '../../hooks/useWorkouts';
@@ -17,6 +18,7 @@ import { TrainingArc } from '../../components/TrainingArc';
 import { WorkoutCard } from '../../components/WorkoutCard';
 import { Text } from '../../components/ui/Text';
 import { Card } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
 import { Colors, Spacing } from '../../constants/theme';
 import { daysToRace } from '../../lib/workout-engine';
 import type { TrainingPhase, PhaseBlock } from '../../types';
@@ -63,6 +65,11 @@ export default function ArcScreen() {
         <View style={styles.empty}>
           <Text size="xl" weight="semibold" align="center">No training plan yet</Text>
           <Text size="sm" variant="secondary" align="center">Add a race to generate your training arc.</Text>
+          <Button
+            label="Add a race"
+            onPress={() => router.push('/race/new')}
+            style={{ marginTop: Spacing['4'] }}
+          />
         </View>
       </SafeAreaView>
     );

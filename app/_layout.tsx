@@ -87,6 +87,15 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="legal"
+          options={{
+            headerShown: true,
+            headerTitle: 'Terms & Privacy',
+            headerStyle: { backgroundColor: Colors.bg.primary },
+            headerTintColor: Colors.text.primary,
+          }}
+        />
+        <Stack.Screen
           name="profile/benchmark"
           options={{
             headerShown: true,

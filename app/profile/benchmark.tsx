@@ -14,6 +14,8 @@ import {
   TextInput,
   Alert,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -142,6 +144,10 @@ export default function BenchmarkScreen() {
   const zones = css ? derivePaceZones(css) : null;
 
   async function handleSave() {
+    if (!user) {
+      Alert.alert('Not signed in', 'Please sign back in to save your benchmark.');
+      return;
+    }
     if (!css || !zones || !t400 || !t1000) {
       Alert.alert('Enter valid times', 'Make sure both times are filled in and the 1000m is slower than the 400m.');
       return;
@@ -177,6 +183,11 @@ export default function BenchmarkScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={80}
+      >
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text size="3xl" weight="bold">CSS Benchmark</Text>
         <Text size="sm" variant="secondary" style={{ lineHeight: 20 }}>
@@ -282,6 +293,7 @@ export default function BenchmarkScreen() {
           Repeat this test every 4–6 weeks.{'\n'}Your zones update automatically when you save.
         </Text>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

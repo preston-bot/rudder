@@ -11,6 +11,8 @@ import {
   Alert,
   TextInput,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
@@ -166,6 +168,11 @@ export default function NewRaceScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={80}
+      >
       {/* Step indicator */}
       <View style={styles.stepIndicator}>
         {(['race', 'goal', 'context'] as Step[]).map((s, i) => (
@@ -180,7 +187,7 @@ export default function NewRaceScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {step === 'race' && (
           <RaceStep
             raceName={raceName} setRaceName={setRaceName}
@@ -235,6 +242,7 @@ export default function NewRaceScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -136,8 +136,12 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={28} color={Colors.brand.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text size="lg" weight="semibold">{user?.email ?? 'Swimmer'}</Text>
-            <Text size="sm" variant="secondary">{user?.app_metadata?.provider ?? 'signed in'}</Text>
+            <Text size="lg" weight="semibold">
+              {user?.user_metadata?.full_name ?? user?.email ?? 'Swimmer'}
+            </Text>
+            {user?.email && user?.user_metadata?.full_name && (
+              <Text size="sm" variant="secondary">{user.email}</Text>
+            )}
           </View>
         </Card>
 
@@ -157,32 +161,10 @@ export default function ProfileScreen() {
             />
             <View style={styles.divider} />
             <SettingsRow
-              icon="time-outline"
-              label="Pool lengths used"
-              value={profile?.pool_lengths?.join(', ') ?? '—'}
-              onPress={() => router.push('/profile/baseline')}
-            />
-            <View style={styles.divider} />
-            <SettingsRow
               icon="speedometer-outline"
               label="Benchmarks"
               value={profile?.critical_swim_speed ? formatPace(profile.critical_swim_speed) + ' CSS' : 'Not set'}
               onPress={() => router.push('/profile/benchmark')}
-            />
-          </Card>
-        </View>
-
-        {/* Devices */}
-        <View style={styles.section}>
-          <Text size="xs" variant="tertiary" weight="semibold" style={styles.sectionLabel}>
-            DEVICES
-          </Text>
-          <Card>
-            <SettingsRow
-              icon="fitness-outline"
-              label="Garmin Connect"
-              value="Not connected"
-              onPress={() => {}}
             />
           </Card>
         </View>
@@ -193,8 +175,6 @@ export default function ProfileScreen() {
             PREFERENCES
           </Text>
           <Card>
-            <SettingsRow icon="resize-outline" label="Units" value="Meters" onPress={() => {}} />
-            <View style={styles.divider} />
             <SettingsRow
               icon="notifications-outline"
               label="Notifications"
@@ -222,9 +202,11 @@ export default function ProfileScreen() {
             ACCOUNT
           </Text>
           <Card>
-            <SettingsRow icon="star-outline" label="Subscription" value="Free" onPress={() => {}} />
-            <View style={styles.divider} />
-            <SettingsRow icon="document-text-outline" label="Terms & Privacy" onPress={() => {}} />
+            <SettingsRow
+              icon="document-text-outline"
+              label="Terms & Privacy"
+              onPress={() => router.push('/legal' as any)}
+            />
             <View style={styles.divider} />
             <SettingsRow icon="log-out-outline" label="Sign out" onPress={handleSignOut} destructive />
           </Card>

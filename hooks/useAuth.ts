@@ -47,6 +47,16 @@ export function useAuth() {
     });
 
     if (error) throw error;
+
+    // Apple only returns fullName on FIRST sign-in. Persist it to user
+    // metadata so we can display the user's name on subsequent launches.
+    const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    if (fullName) {
+      await supabase.auth.updateUser({ data: { full_name: fullName } });
+    }
   }
 
   // ─── Google Sign-In ────────────────────────────────────────────────────────

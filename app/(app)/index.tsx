@@ -55,7 +55,7 @@ export default function RevealScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyState}>
           <Text size="3xl" weight="bold" align="center">
-            Drop your anchor.
+            No race on the horizon
           </Text>
           <Text size="md" variant="secondary" align="center" style={{ lineHeight: 24 }}>
             Add your race and Rudder builds your training plan around it.
@@ -142,7 +142,7 @@ export default function RevealScreen() {
 
         {/* CTA */}
         <Button
-          label="View My Training Arc"
+          label="See My Arc"
           fullWidth
           onPress={() => router.push('/(app)/arc')}
           icon={<Ionicons name="analytics-outline" size={18} color={Colors.text.inverse} />}

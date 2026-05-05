@@ -12,6 +12,8 @@ import {
   Alert,
   TextInput,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -106,7 +108,12 @@ export default function ManualLogScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={80}
+      >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text size="3xl" weight="bold">Log a swim</Text>
         <Text size="sm" variant="secondary" style={{ lineHeight: 20 }}>
           No device? No problem. Tell Rudder what you did.
@@ -216,6 +223,7 @@ export default function ManualLogScreen() {
         />
         <Button label="Cancel" variant="ghost" fullWidth onPress={() => router.back()} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

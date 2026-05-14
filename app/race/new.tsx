@@ -59,6 +59,20 @@ const PRIORITIES: { value: RacePriority; label: string; description: string }[] 
   { value: 'C', label: 'C race', description: 'Training race, low stakes' },
 ];
 
+type DistanceUnit = 'm' | 'yd' | 'km' | 'mi';
+const DISTANCE_UNITS: { value: DistanceUnit; label: string }[] = [
+  { value: 'm', label: 'm' },
+  { value: 'yd', label: 'yd' },
+  { value: 'km', label: 'km' },
+  { value: 'mi', label: 'mi' },
+];
+const TO_METERS: Record<DistanceUnit, number> = {
+  m: 1,
+  yd: 0.9144,
+  km: 1000,
+  mi: 1609.344,
+};
+
 type Step = 'race' | 'goal' | 'context';
 
 export default function NewRaceScreen() {
@@ -71,12 +85,25 @@ export default function NewRaceScreen() {
 
   // Step 1 — race
   const [raceName, setRaceName] = useState('');
-  const [raceDate, setRaceDate] = useState('');
+  const [dateDay, setDateDay] = useState('');
+  const [dateMonth, setDateMonth] = useState('');
+  const [dateYear, setDateYear] = useState('');
   const [location, setLocation] = useState('');
   const [distance, setDistance] = useState('');
+  const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>('m');
   const [environment, setEnvironment] = useState<RaceEnvironment>('lake');
   const [priority, setPriority] = useState<RacePriority>('A');
   const [wetsuit, setWetsuit] = useState<boolean | null>(null);
+
+  // Build an ISO date (YYYY-MM-DD) from the DD/MM/YYYY inputs, or '' if incomplete/invalid
+  const raceDate = (() => {
+    const d = parseInt(dateDay, 10);
+    const m = parseInt(dateMonth, 10);
+    const y = parseInt(dateYear, 10);
+    if (isNaN(d) || isNaN(m) || isNaN(y)) return '';
+    if (d < 1 || d > 31 || m < 1 || m > 12 || y < 2024 || y > 2100) return '';
+    return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  })();
 
   // Step 2 — goal
   const [goalType, setGoalType] = useState<GoalType>('finish');
@@ -106,7 +133,7 @@ export default function NewRaceScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const distanceMeters = parseFloat(distance);
+      const distanceMeters = Math.round(parseFloat(distance) * TO_METERS[distanceUnit]);
       const goalTimeSec =
         goalType === 'time'
           ? parseInt(goalTimeHours || '0') * 3600 + parseInt(goalTimeMins || '0') * 60
@@ -179,9 +206,12 @@ export default function NewRaceScreen() {
         {step === 'race' && (
           <RaceStep
             raceName={raceName} setRaceName={setRaceName}
-            raceDate={raceDate} setRaceDate={setRaceDate}
+            dateDay={dateDay} setDateDay={setDateDay}
+            dateMonth={dateMonth} setDateMonth={setDateMonth}
+            dateYear={dateYear} setDateYear={setDateYear}
             location={location} setLocation={setLocation}
             distance={distance} setDistance={setDistance}
+            distanceUnit={distanceUnit} setDistanceUnit={setDistanceUnit}
             environment={environment} setEnvironment={setEnvironment}
             priority={priority} setPriority={setPriority}
             wetsuit={wetsuit} setWetsuit={setWetsuit}
@@ -296,7 +326,7 @@ function ChipRow<T extends string>({
   );
 }
 
-function RaceStep({ raceName, setRaceName, raceDate, setRaceDate, location, setLocation, distance, setDistance, environment, setEnvironment, priority, setPriority, wetsuit, setWetsuit }: any) {
+function RaceStep({ raceName, setRaceName, dateDay, setDateDay, dateMonth, setDateMonth, dateYear, setDateYear, location, setLocation, distance, setDistance, distanceUnit, setDistanceUnit, environment, setEnvironment, priority, setPriority, wetsuit, setWetsuit }: any) {
   return (
     <View style={styles.stepContent}>
       <Text size="3xl" weight="bold">Your race</Text>
@@ -308,8 +338,14 @@ function RaceStep({ raceName, setRaceName, raceDate, setRaceDate, location, setL
       </View>
 
       <View style={styles.field}>
-        <FieldLabel>Race date *</FieldLabel>
-        <StyledInput value={raceDate} onChangeText={setRaceDate} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" />
+        <FieldLabel>Race date * (DD / MM / YYYY)</FieldLabel>
+        <View style={{ flexDirection: 'row', gap: Spacing['2'], alignItems: 'center' }}>
+          <StyledInput value={dateDay} onChangeText={setDateDay} placeholder="DD" keyboardType="number-pad" maxLength={2} style={{ width: 64, textAlign: 'center' }} />
+          <Text variant="secondary">/</Text>
+          <StyledInput value={dateMonth} onChangeText={setDateMonth} placeholder="MM" keyboardType="number-pad" maxLength={2} style={{ width: 64, textAlign: 'center' }} />
+          <Text variant="secondary">/</Text>
+          <StyledInput value={dateYear} onChangeText={setDateYear} placeholder="YYYY" keyboardType="number-pad" maxLength={4} style={{ width: 84, textAlign: 'center' }} />
+        </View>
       </View>
 
       <View style={styles.field}>
@@ -318,8 +354,13 @@ function RaceStep({ raceName, setRaceName, raceDate, setRaceDate, location, setL
       </View>
 
       <View style={styles.field}>
-        <FieldLabel>Distance (meters) *</FieldLabel>
-        <StyledInput value={distance} onChangeText={setDistance} placeholder="e.g. 1500" keyboardType="numeric" />
+        <FieldLabel>Distance *</FieldLabel>
+        <View style={{ flexDirection: 'row', gap: Spacing['2'], alignItems: 'center' }}>
+          <StyledInput value={distance} onChangeText={setDistance} placeholder="e.g. 1500" keyboardType="numeric" style={{ flex: 1 }} />
+        </View>
+        <View style={{ marginTop: Spacing['2'] }}>
+          <ChipRow options={DISTANCE_UNITS} selected={distanceUnit} onSelect={setDistanceUnit} />
+        </View>
       </View>
 
       <View style={styles.field}>
@@ -338,7 +379,7 @@ function RaceStep({ raceName, setRaceName, raceDate, setRaceDate, location, setL
       </View>
 
       <View style={styles.field}>
-        <FieldLabel>Wetsuit allowed?</FieldLabel>
+        <FieldLabel>Planning on Wetsuit?</FieldLabel>
         <ChipRow options={[{ value: 'yes' as any, label: 'Yes' }, { value: 'no' as any, label: 'No' }, { value: 'unknown' as any, label: 'Unknown' }]} selected={wetsuit === true ? 'yes' : wetsuit === false ? 'no' : 'unknown'} onSelect={(v: any) => setWetsuit(v === 'yes' ? true : v === 'no' ? false : null)} />
       </View>
     </View>

@@ -22,7 +22,7 @@ export default function RaceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { race, loading } = useRace(id);
-  const { updateRace } = useRaces(user?.id);
+  const { updateRace, deleteRace } = useRaces(user?.id);
   const { plan } = useTrainingPlan(id);
 
   if (loading || !race) {
@@ -59,6 +59,29 @@ export default function RaceDetailScreen() {
       'plain-text',
       '',
       'numeric',
+    );
+  }
+
+  function handleDelete() {
+    if (!race) return;
+    Alert.alert(
+      'Delete this race?',
+      `"${race.name}" and its training plan will be permanently removed. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteRace(race.race_id);
+              router.back();
+            } catch (e: any) {
+              Alert.alert('Could not delete', e.message);
+            }
+          },
+        },
+      ],
     );
   }
 
@@ -152,6 +175,14 @@ export default function RaceDetailScreen() {
             icon={<Ionicons name="checkmark-circle-outline" size={18} color={Colors.text.primary} />}
           />
         )}
+
+        <Button
+          label="Delete race"
+          variant="destructive"
+          fullWidth
+          onPress={handleDelete}
+          icon={<Ionicons name="trash-outline" size={18} color={Colors.error} />}
+        />
       </ScrollView>
     </SafeAreaView>
   );

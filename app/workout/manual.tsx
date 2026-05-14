@@ -41,6 +41,20 @@ const STROKE_OPTIONS: { value: StrokeType; label: string }[] = [
   { value: 'mixed', label: 'Mixed' },
 ];
 
+type DistanceUnit = 'm' | 'yd' | 'km' | 'mi';
+const DISTANCE_UNITS: { value: DistanceUnit; label: string }[] = [
+  { value: 'm', label: 'm' },
+  { value: 'yd', label: 'yd' },
+  { value: 'km', label: 'km' },
+  { value: 'mi', label: 'mi' },
+];
+const TO_METERS: Record<DistanceUnit, number> = {
+  m: 1,
+  yd: 0.9144,
+  km: 1000,
+  mi: 1609.344,
+};
+
 const RPE_LABELS: Record<number, string> = {
   1: 'Very easy', 2: 'Easy', 3: 'Moderate', 4: 'Somewhat hard',
   5: 'Hard', 6: 'Hard', 7: 'Very hard', 8: 'Very hard',
@@ -53,14 +67,15 @@ export default function ManualLogScreen() {
 
   const [poolLength, setPoolLength] = useState<PoolLength>('25y');
   const [distanceStr, setDistanceStr] = useState('');
+  const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>('m');
   const [durationStr, setDurationStr] = useState('');
   const [stroke, setStroke] = useState<StrokeType>('freestyle');
   const [rpe, setRpe] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Live pace preview
-  const distance = parseFloat(distanceStr) || 0;
+  // Live pace preview — distance is normalized to meters
+  const distance = (parseFloat(distanceStr) || 0) * TO_METERS[distanceUnit];
   const duration = parseFloat(durationStr) || 0;
   const pacePreview =
     distance > 0 && duration > 0
@@ -101,7 +116,7 @@ export default function ManualLogScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
         'Swim logged',
-        `${distance}m saved. It counts toward your training history.`,
+        `${Math.round(distance)}m saved. It counts toward your training history.`,
         [{ text: 'Done', onPress: () => router.back() }],
       );
     } catch (e: any) {
@@ -134,7 +149,7 @@ export default function ManualLogScreen() {
         </Section>
 
         {/* Distance */}
-        <Section label="Distance (meters)">
+        <Section label="Distance">
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
@@ -145,8 +160,13 @@ export default function ManualLogScreen() {
               placeholderTextColor={Colors.text.tertiary}
               selectionColor={Colors.brand.primary}
             />
-            <Text variant="secondary" style={styles.inputUnit}>m</Text>
+            <Text variant="secondary" style={styles.inputUnit}>{distanceUnit}</Text>
           </View>
+          <ChipRow
+            options={DISTANCE_UNITS}
+            selected={distanceUnit}
+            onSelect={(v) => select(setDistanceUnit, v)}
+          />
         </Section>
 
         {/* Duration */}

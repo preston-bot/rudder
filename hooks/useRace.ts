@@ -50,12 +50,20 @@ export function useRaces(userId: string | undefined) {
     await fetchRaces();
   }
 
+  async function deleteRace(race_id: string) {
+    // Remove the training plan first so we don't leave an orphaned plan.
+    await supabase.from('training_plans').delete().eq('race_id', race_id);
+    const { error } = await supabase.from('races').delete().eq('race_id', race_id);
+    if (error) throw error;
+    await fetchRaces();
+  }
+
   // Primary race = next upcoming, priority A
   const primaryRace = races.find(
     (r) => !r.completed && new Date(r.date) >= new Date(),
   );
 
-  return { races, primaryRace, loading, error, createRace, updateRace, refresh: fetchRaces };
+  return { races, primaryRace, loading, error, createRace, updateRace, deleteRace, refresh: fetchRaces };
 }
 
 export function useRace(race_id: string) {

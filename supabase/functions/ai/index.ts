@@ -67,6 +67,12 @@ async function generatePlan(payload: Record<string, unknown>, userJwt: string) {
   const { race, focus_areas, has_benchmark } = payload;
   const profile = await fetchProfile(userJwt);
 
+  const r = race as Record<string, unknown>;
+  const goalTimeLine =
+    r.goal_type === 'time' && typeof r.goal_time_seconds === 'number'
+      ? `\nGOAL TIME: ${Math.floor(r.goal_time_seconds / 60)}:${String(r.goal_time_seconds % 60).padStart(2, '0')} — this is a TIME goal. Build the plan's pace work, threshold sessions, and race-specific phase around hitting this finish time. Every pace prescription should ladder toward it.`
+      : '';
+
   const prompt = `
 Generate a complete training plan for this swimmer and race.
 
@@ -75,6 +81,7 @@ ${JSON.stringify(profile, null, 2)}
 
 Race:
 ${JSON.stringify(race, null, 2)}
+${goalTimeLine}
 
 Focus areas: ${JSON.stringify(focus_areas)}
 Has existing benchmark: ${has_benchmark}

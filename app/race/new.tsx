@@ -18,8 +18,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useRaces } from '../../hooks/useRace';
 import { useProfile } from '../../hooks/useProfile';
-import { generateTrainingPlan } from '../../lib/claude';
-import { supabase } from '../../lib/supabase';
+import { buildAndSaveTrainingPlan } from '../../lib/claude';
 import { Button } from '../../components/ui/Button';
 import { Text } from '../../components/ui/Text';
 import { Card } from '../../components/ui/Card';
@@ -113,6 +112,12 @@ export default function NewRaceScreen() {
           ? parseInt(goalTimeHours || '0') * 3600 + parseInt(goalTimeMins || '0') * 60
           : null;
 
+      // Persist training context to profile so the edge function can read it
+      await updateProfile({
+        available_days_per_week: daysPerWeek,
+        pool_lengths: poolLengths,
+      });
+
       const race = await createRace({
         user_id: user.id,
         name: raceName,
@@ -127,36 +132,19 @@ export default function NewRaceScreen() {
         priority,
       });
 
-      // Persist training context to profile so the edge function can read it
-      await updateProfile({
-        available_days_per_week: daysPerWeek,
-        pool_lengths: poolLengths,
-      });
-
-      // Generate plan — edge function fetches the full profile server-side
-      const generatedPlan = await generateTrainingPlan({
-        profile: {} as any,
-        race,
-        focus_areas: focusAreas,
-        has_benchmark: false,
-      });
-
-      // Save the generated plan to Supabase
-      const { error: planError } = await supabase.from('training_plans').insert({
-        race_id: race.race_id,
-        user_id: user.id,
-        current_phase: generatedPlan.current_phase,
-        phases: generatedPlan.phases,
-        focus_areas: generatedPlan.focus_areas,
-        compliance_score: null,
-        trend_flag: null,
-        last_adjustment_explanation: null,
-        last_adjustment_reason: null,
-      });
-
-      if (planError) throw planError;
-
-      router.replace('/(app)/');
+      // Generate + save the plan. If this fails, the race is still saved —
+      // send the user to the Arc tab where they can retry plan generation
+      // instead of losing everything they just entered.
+      try {
+        await buildAndSaveTrainingPlan(race, focusAreas, user.id);
+        router.replace('/(app)/');
+      } catch (planErr: any) {
+        Alert.alert(
+          'Race saved — plan needs a retry',
+          "We couldn't build your training plan just now. Open the Arc tab to try again.",
+        );
+        router.replace('/(app)/arc');
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -253,13 +241,13 @@ function FieldLabel({ children }: { children: string }) {
   return <Text size="sm" variant="secondary" weight="medium">{children}</Text>;
 }
 
-function StyledInput({ ...props }: React.ComponentProps<typeof TextInput>) {
+function StyledInput({ style, ...props }: React.ComponentProps<typeof TextInput>) {
   return (
     <TextInput
-      style={inputStyle}
       placeholderTextColor={Colors.text.tertiary}
       selectionColor={Colors.brand.primary}
       {...props}
+      style={[inputStyle, style]}
     />
   );
 }

@@ -47,6 +47,38 @@ export async function generateTrainingPlan(
   return callAI<TrainingPlan>('generate_plan', input);
 }
 
+/**
+ * Generate a training plan for a race and persist it to Supabase.
+ * Used by both the race-creation flow and the Arc "retry" path when
+ * plan generation failed the first time. Throws on any failure so the
+ * caller can surface a retryable error instead of leaving a broken Arc.
+ */
+export async function buildAndSaveTrainingPlan(
+  race: Race,
+  focusAreas: FocusArea[],
+  userId: string,
+): Promise<void> {
+  const generatedPlan = await generateTrainingPlan({
+    profile: {} as UserProfile,
+    race,
+    focus_areas: focusAreas,
+    has_benchmark: false,
+  });
+
+  const { error } = await supabase.from('training_plans').insert({
+    race_id: race.race_id,
+    user_id: userId,
+    current_phase: generatedPlan.current_phase,
+    phases: generatedPlan.phases,
+    focus_areas: generatedPlan.focus_areas,
+    compliance_score: null,
+    trend_flag: null,
+    last_adjustment_explanation: null,
+    last_adjustment_reason: null,
+  });
+  if (error) throw error;
+}
+
 // ─── Plan Adjustment ─────────────────────────────────────────────────────────
 
 export interface AdjustPlanInput {

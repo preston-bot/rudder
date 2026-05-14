@@ -31,6 +31,7 @@ export default function RootLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: Colors.bg.primary },
           animation: 'fade',
+          headerBackTitle: 'Back',
         }}
       >
         <Stack.Screen name="(auth)" />

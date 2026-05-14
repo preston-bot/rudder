@@ -98,7 +98,12 @@ export default function ManualLogScreen() {
         rpe,
         notes,
       });
-      router.back();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Swim logged',
+        `${distance}m saved. It counts toward your training history.`,
+        [{ text: 'Done', onPress: () => router.back() }],
+      );
     } catch (e: any) {
       Alert.alert('Error saving swim', e.message);
     } finally {

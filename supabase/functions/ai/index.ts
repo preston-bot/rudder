@@ -23,7 +23,29 @@ async function fetchProfile(userJwt: string) {
   return data;
 }
 
-const MODEL = 'claude-opus-4-6';
+const MODEL = 'claude-opus-4-7';
+
+/**
+ * Extract JSON from a Claude response. The system prompt asks for raw JSON,
+ * but models sometimes still wrap output in ```json fences — strip those
+ * before parsing so a stray fence doesn't crash the whole request.
+ */
+function parseClaudeJSON(msg: { content: Array<{ type: string; text?: string }> }) {
+  const block = msg.content.find((b) => b.type === 'text');
+  let text = block?.text ?? '';
+  if (!text) throw new Error('Claude returned an empty response');
+
+  text = text.trim();
+  // Strip ```json ... ``` or ``` ... ``` fences if present
+  const fenceMatch = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+  if (fenceMatch) text = fenceMatch[1].trim();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Claude returned malformed JSON — try again');
+  }
+}
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
@@ -88,13 +110,12 @@ Make phases realistic given the days to race. Use today's date as plan start.
 
   const msg = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 8192,
+    max_tokens: 16384,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
-  return JSON.parse(text);
+  return parseClaudeJSON(msg);
 }
 
 async function adjustPlan(payload: Record<string, unknown>, userJwt: string) {
@@ -140,13 +161,12 @@ Return JSON:
 
   const msg = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 8192,
+    max_tokens: 16384,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
-  return JSON.parse(text);
+  return parseClaudeJSON(msg);
 }
 
 async function interpretSession(payload: Record<string, unknown>) {
@@ -180,8 +200,7 @@ Return JSON:
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
-  return JSON.parse(text);
+  return parseClaudeJSON(msg);
 }
 
 async function revealCopy(payload: Record<string, unknown>) {
@@ -206,13 +225,12 @@ Return JSON: { "motivational_line": "..." }
 
   const msg = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 100,
+    max_tokens: 256,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: prompt }],
   });
 
-  const text = msg.content[0].type === 'text' ? msg.content[0].text : '';
-  return JSON.parse(text);
+  return parseClaudeJSON(msg);
 }
 
 // ─── Router ───────────────────────────────────────────────────────────────────

@@ -9,11 +9,13 @@ import {
   ScrollView,
   SafeAreaView,
   Pressable,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useRaces } from '../../hooks/useRace';
 import { useTrainingPlan } from '../../hooks/useWorkouts';
+import { buildAndSaveTrainingPlan } from '../../lib/claude';
 import { TrainingArc } from '../../components/TrainingArc';
 import { WorkoutCard } from '../../components/WorkoutCard';
 import { Text } from '../../components/ui/Text';
@@ -49,8 +51,9 @@ const PHASE_DETAILS: Record<TrainingPhase, { label: string; description: string;
 export default function ArcScreen() {
   const { user } = useAuth();
   const { primaryRace } = useRaces(user?.id);
-  const { plan, loading } = useTrainingPlan(primaryRace?.race_id);
+  const { plan, loading, refresh } = useTrainingPlan(primaryRace?.race_id);
   const [selectedPhase, setSelectedPhase] = useState<TrainingPhase | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   const activePhase = selectedPhase ?? plan?.current_phase ?? 'base';
   const days = primaryRace ? daysToRace(primaryRace.date) : null;
@@ -59,7 +62,21 @@ export default function ArcScreen() {
   const phaseBlock = plan?.phases.find((p) => p.phase === activePhase);
   const phaseSessions = phaseBlock?.weeks.flatMap((w) => w.sessions).slice(0, 4) ?? [];
 
-  if (!plan && !loading) {
+  async function handleRetryPlan() {
+    if (!primaryRace || !user) return;
+    setRetrying(true);
+    try {
+      await buildAndSaveTrainingPlan(primaryRace, [], user.id);
+      await refresh();
+    } catch (e: any) {
+      Alert.alert('Still having trouble', e.message);
+    } finally {
+      setRetrying(false);
+    }
+  }
+
+  // No race at all → prompt to add one
+  if (!primaryRace && !loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.empty}>
@@ -68,6 +85,27 @@ export default function ArcScreen() {
           <Button
             label="Add a race"
             onPress={() => router.push('/race/new')}
+            style={{ marginTop: Spacing['4'] }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Race exists but plan generation didn't finish → let the user retry
+  if (primaryRace && !plan && !loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.empty}>
+          <Text size="xl" weight="semibold" align="center">Plan didn't finish building</Text>
+          <Text size="sm" variant="secondary" align="center">
+            Your race is saved. We just need to build the training arc for{' '}
+            {primaryRace.name}.
+          </Text>
+          <Button
+            label="Retry plan generation"
+            loading={retrying}
+            onPress={handleRetryPlan}
             style={{ marginTop: Spacing['4'] }}
           />
         </View>

@@ -31,6 +31,7 @@ const POOL_OPTIONS: { value: PoolLength; label: string }[] = [
   { value: '25y', label: '25 yards' },
   { value: '25m', label: '25 meters' },
   { value: '20m', label: '20 meters' },
+  { value: 'open_water', label: 'Open water' },
 ];
 
 const STROKE_OPTIONS: { value: StrokeType; label: string }[] = [
@@ -139,8 +140,8 @@ export default function ManualLogScreen() {
           No device? No problem. Tell Rudder what you did.
         </Text>
 
-        {/* Pool length */}
-        <Section label="Pool length">
+        {/* Pool length / venue */}
+        <Section label="Where did you swim?">
           <ChipRow
             options={POOL_OPTIONS}
             selected={poolLength}

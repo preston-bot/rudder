@@ -140,7 +140,7 @@ export default function BaselineScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text size="3xl" weight="bold">Physical baseline</Text>
         <Text size="sm" variant="secondary" style={{ lineHeight: 20 }}>
-          This shapes every session Rudder builds for you.
+          Used to shape training load, recovery assumptions, and workout progression.
         </Text>
 
         {/* Experience */}

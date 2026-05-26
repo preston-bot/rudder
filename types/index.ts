@@ -5,7 +5,7 @@ export type AuthProvider = 'apple' | 'google';
 // ─── User Profile ────────────────────────────────────────────────────────────
 
 export type UnitsPreference = 'yards' | 'meters';
-export type PoolLength = '20m' | '25y' | '25m';
+export type PoolLength = '20m' | '25y' | '25m' | 'open_water';
 export type DominantStroke = 'freestyle' | 'backstroke' | 'breaststroke' | 'butterfly';
 export type InjuryFlag = 'shoulder' | 'knee' | 'back' | 'hip' | 'neck';
 export type ExperienceLevel = 'novice' | 'experienced' | 'competitive';

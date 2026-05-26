@@ -4,7 +4,7 @@
  * Entry point from Profile → Races row.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,7 +13,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useRaces } from '../hooks/useRace';
@@ -32,7 +32,15 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function RacesScreen() {
   const { user } = useAuth();
-  const { races, loading } = useRaces(user?.id);
+  const { races, loading, refresh } = useRaces(user?.id);
+
+  // Refetch when the screen comes into focus so deletes/edits done on the
+  // detail screen show up here without needing a full app reload.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   const upcoming = races.filter((r) => !r.completed && new Date(r.date) >= new Date());
   const completed = races.filter((r) => r.completed || new Date(r.date) < new Date());

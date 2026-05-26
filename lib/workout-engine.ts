@@ -45,6 +45,8 @@ const POOL_LENGTH_METERS: Record<PoolLength, number> = {
   '20m': 20,
   '25y': 22.86,
   '25m': 25,
+  // Open water has no lap unit; we treat distance as already in true meters.
+  open_water: 1,
 };
 
 export function poolLengthMeters(length: PoolLength): number {

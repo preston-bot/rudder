@@ -61,6 +61,16 @@ export default function RootLayout() {
           options={{ headerShown: true, headerTitle: '', headerStyle: { backgroundColor: Colors.bg.primary }, headerTintColor: Colors.text.primary }}
         />
         <Stack.Screen
+          name="race/edit/[id]"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            headerTitle: 'Edit Race',
+            headerStyle: { backgroundColor: Colors.bg.primary },
+            headerTintColor: Colors.text.primary,
+          }}
+        />
+        <Stack.Screen
           name="workout/[id]"
           options={{ headerShown: true, headerTitle: '', headerStyle: { backgroundColor: Colors.bg.primary }, headerTintColor: Colors.text.primary }}
         />

@@ -177,6 +177,14 @@ export default function RaceDetailScreen() {
         )}
 
         <Button
+          label="Edit race"
+          variant="ghost"
+          fullWidth
+          onPress={() => router.push({ pathname: '/race/edit/[id]' as any, params: { id: race.race_id } })}
+          icon={<Ionicons name="create-outline" size={18} color={Colors.brand.primary} />}
+        />
+
+        <Button
           label="Delete race"
           variant="destructive"
           fullWidth

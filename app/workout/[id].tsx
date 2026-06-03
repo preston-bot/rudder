@@ -197,6 +197,13 @@ export default function WorkoutDetailScreen() {
               onPress={handleMarkDone}
               icon={<Ionicons name="checkmark-circle-outline" size={18} color={Colors.text.inverse} />}
             />
+            <Button
+              label="Edit workout"
+              variant="ghost"
+              fullWidth
+              onPress={() => router.push({ pathname: '/workout/edit/[id]' as any, params: { id: session!.session_id } })}
+              icon={<Ionicons name="create-outline" size={18} color={Colors.brand.primary} />}
+            />
             <Button label="Skip this session" variant="ghost" fullWidth onPress={handleSkip} />
           </>
         )}

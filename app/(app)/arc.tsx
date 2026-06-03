@@ -38,7 +38,7 @@ const PHASE_DETAILS: Record<TrainingPhase, { label: string; description: string;
   },
   specific: {
     label: 'Specific',
-    description: 'Align training stimuli with race demands — pace, duration, conditions.',
+    description: 'Race-specific work. Sessions match the pace, distance, and conditions of your race so the effort feels familiar on race day.',
     principle: "Train how you'll race. Not harder. Smarter.",
   },
   taper: {

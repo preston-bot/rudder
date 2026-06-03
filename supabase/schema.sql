@@ -26,6 +26,7 @@ create table public.user_profiles (
   experience_level text not null default 'novice' check (experience_level in ('novice', 'experienced', 'competitive')),
   primary_identity text not null default 'swimmer' check (primary_identity in ('swimmer', 'triathlete', 'ow_specialist')),
   available_days_per_week int not null default 3,
+  available_weekdays text[] not null default '{}',
   preferred_session_duration_min int not null default 30,
   preferred_session_duration_max int not null default 90,
   typical_constraints text[] not null default '{}',

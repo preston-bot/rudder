@@ -88,6 +88,11 @@ Has existing benchmark: ${has_benchmark}
 
 Critical constraints from profile — you MUST respect these:
 - Schedule exactly ${profile?.available_days_per_week ?? 3} sessions per week
+${
+  Array.isArray(profile?.available_weekdays) && profile.available_weekdays.length
+    ? `- ONLY schedule sessions on these weekdays (lowercase 3-letter codes): ${JSON.stringify(profile.available_weekdays)}. Do NOT schedule on any other day. Each session's "date" field must fall on one of these weekdays.`
+    : '- Distribute sessions evenly across the week with at least one rest day between hard sessions.'
+}
 - Sessions should be ${profile?.preferred_session_duration_min ?? 30}–${profile?.preferred_session_duration_max ?? 90} minutes
 - Experience level: ${profile?.experience_level ?? 'novice'} (novice=shorter distances and more recovery; competitive=full load)
 - Miss tolerance: ${profile?.miss_tolerance ?? 'adaptive'} (low_guilt=build in buffer sessions; strict=no buffer)

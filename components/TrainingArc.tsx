@@ -13,7 +13,12 @@ import { Text } from './ui/Text';
 import type { TrainingPhase, PhaseBlock } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ARC_WIDTH = SCREEN_WIDTH - Spacing['8'] * 2;
+// Outer screen padding (Spacing['6'] on the Arc tab's ScrollView), plus
+// internal padding so the end-circles and labels don't get clipped at the
+// edges of the SVG viewport.
+const HORIZ_PAD = 16;
+const VERT_PAD = 12;
+const ARC_WIDTH = SCREEN_WIDTH - Spacing['6'] * 2 - HORIZ_PAD * 2;
 const ARC_HEIGHT = 120;
 const PHASE_COLORS: Record<TrainingPhase, string> = {
   base: Colors.phase.base,
@@ -30,7 +35,9 @@ const PHASE_LABELS: Record<TrainingPhase, string> = {
 const PHASE_DESCRIPTIONS: Record<TrainingPhase, string> = {
   base: 'Establish aerobic capacity and technical consistency.',
   build: 'Progressively increase intensity and density.',
-  specific: 'Align training stimuli with race demands.',
+  // "Specific" = race-specific: pace, distance, and conditions you'll see
+  // on race day. The phase right before taper.
+  specific: 'Race-specific work — train at race pace, distance, and conditions.',
   taper: 'Reduce volume, maintain intensity, arrive sharp.',
 };
 
@@ -86,7 +93,11 @@ export function TrainingArc({ phases, currentPhase, raceDate, onPhasePress }: Pr
 
   return (
     <View style={styles.container}>
-      <Svg width={ARC_WIDTH} height={ARC_HEIGHT + 40}>
+      <Svg
+        width={ARC_WIDTH + HORIZ_PAD * 2}
+        height={ARC_HEIGHT + 40 + VERT_PAD * 2}
+        viewBox={`${-HORIZ_PAD} ${-VERT_PAD} ${ARC_WIDTH + HORIZ_PAD * 2} ${ARC_HEIGHT + 40 + VERT_PAD * 2}`}
+      >
         {/* Ghost arc (full path) */}
         <Path d={arcD} stroke={Colors.border.subtle} strokeWidth={2} fill="none" />
 

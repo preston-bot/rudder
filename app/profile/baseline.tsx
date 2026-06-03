@@ -69,6 +69,16 @@ const DURATION_OPTIONS = [
   { label: '90m+', min: 90, max: 120 },
 ];
 
+const WEEKDAYS: { value: string; label: string }[] = [
+  { value: 'mon', label: 'Mon' },
+  { value: 'tue', label: 'Tue' },
+  { value: 'wed', label: 'Wed' },
+  { value: 'thu', label: 'Thu' },
+  { value: 'fri', label: 'Fri' },
+  { value: 'sat', label: 'Sat' },
+  { value: 'sun', label: 'Sun' },
+];
+
 export default function BaselineScreen() {
   const { user } = useAuth();
   const { profile, loading, updateProfile } = useProfile(user?.id);
@@ -76,7 +86,7 @@ export default function BaselineScreen() {
 
   const [experience, setExperience] = useState<ExperienceLevel>('experienced');
   const [identity, setIdentity] = useState<PrimaryIdentity>('swimmer');
-  const [daysPerWeek, setDaysPerWeek] = useState(3);
+  const [weekdays, setWeekdays] = useState<string[]>([]);
   const [durationIndex, setDurationIndex] = useState(1); // 45–60m default
   const [tolerance, setTolerance] = useState<MissTolerance>('adaptive');
   const [stroke, setStroke] = useState<DominantStroke>('freestyle');
@@ -87,7 +97,7 @@ export default function BaselineScreen() {
     if (!profile) return;
     if (profile.experience_level) setExperience(profile.experience_level);
     if (profile.primary_identity) setIdentity(profile.primary_identity);
-    if (profile.available_days_per_week) setDaysPerWeek(profile.available_days_per_week);
+    if (profile.available_weekdays?.length) setWeekdays(profile.available_weekdays);
     if (profile.miss_tolerance) setTolerance(profile.miss_tolerance);
     if (profile.dominant_stroke) setStroke(profile.dominant_stroke as DominantStroke);
     if (profile.injury_flags?.length) setInjuries(profile.injury_flags as InjuryFlag[]);
@@ -111,6 +121,13 @@ export default function BaselineScreen() {
     );
   }
 
+  function toggleWeekday(day: string) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setWeekdays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+    );
+  }
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -118,7 +135,8 @@ export default function BaselineScreen() {
       await updateProfile({
         experience_level: experience,
         primary_identity: identity,
-        available_days_per_week: daysPerWeek,
+        available_days_per_week: weekdays.length || 3,
+        available_weekdays: weekdays,
         preferred_session_duration_min: dur.min,
         preferred_session_duration_max: dur.max,
         miss_tolerance: tolerance,
@@ -180,18 +198,23 @@ export default function BaselineScreen() {
           </View>
         </Section>
 
-        {/* Days per week */}
-        <Section label="Training days per week">
+        {/* Which days can you swim */}
+        <Section label="Which days can you swim?">
+          <Text size="xs" variant="tertiary" style={{ lineHeight: 18 }}>
+            Sessions will only be scheduled on the days you select.
+          </Text>
           <View style={styles.chips}>
-            {[2, 3, 4, 5, 6].map((d) => {
-              const active = daysPerWeek === d;
+            {WEEKDAYS.map((d) => {
+              const active = weekdays.includes(d.value);
               return (
                 <Pressable
-                  key={d}
-                  onPress={() => tap(setDaysPerWeek, d)}
+                  key={d.value}
+                  onPress={() => toggleWeekday(d.value)}
                   style={[styles.chip, active && styles.chipActive]}
                 >
-                  <Text size="md" weight="semibold" style={active ? { color: Colors.text.inverse } : undefined}>{d}</Text>
+                  <Text size="sm" weight={active ? 'semibold' : 'regular'} style={active ? { color: Colors.text.inverse } : undefined}>
+                    {d.label}
+                  </Text>
                 </Pressable>
               );
             })}

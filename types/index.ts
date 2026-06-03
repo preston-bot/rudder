@@ -53,6 +53,8 @@ export interface UserProfile {
   experience_level: ExperienceLevel;
   primary_identity: PrimaryIdentity;
   available_days_per_week: number;
+  /** Three-letter weekday codes the swimmer can train: 'mon','tue','wed','thu','fri','sat','sun'. Empty = no preference. */
+  available_weekdays: string[];
   preferred_session_duration_min: number;
   preferred_session_duration_max: number;
   typical_constraints: string[];

@@ -109,6 +109,36 @@ export function useTrainingPlan(race_id: string | undefined) {
     await fetchPlan();
   }
 
+  /**
+   * Update editable fields on a planned session. Used by the workout-edit
+   * screen so a user can tweak distance, time, intent, etc., and have the
+   * Arc reflect it immediately.
+   */
+  async function updateSessionFields(
+    sessionId: string,
+    updates: Partial<PlannedSession>,
+  ) {
+    if (!plan) throw new Error('No plan loaded');
+
+    const updatedPhases = plan.phases.map((phase) => ({
+      ...phase,
+      weeks: phase.weeks.map((week) => ({
+        ...week,
+        sessions: week.sessions.map((s) =>
+          s.session_id === sessionId ? { ...s, ...updates } : s,
+        ),
+      })),
+    }));
+
+    const { error } = await supabase
+      .from('training_plans')
+      .update({ phases: updatedPhases })
+      .eq('plan_id', plan.plan_id);
+
+    if (error) throw error;
+    await fetchPlan();
+  }
+
   /** Mark a session as skipped. Flags it without penalizing compliance. */
   async function skipSession(sessionId: string) {
     if (!plan) throw new Error('No plan loaded');
@@ -192,7 +222,7 @@ export function useTrainingPlan(race_id: string | undefined) {
     await fetchPlan();
   }
 
-  return { plan, loading, error, refresh: fetchPlan, markSessionDone, skipSession, detectAndAdaptMissedSessions };
+  return { plan, loading, error, refresh: fetchPlan, markSessionDone, skipSession, updateSessionFields, detectAndAdaptMissedSessions };
 }
 
 // ─── This Week ────────────────────────────────────────────────────────────────
